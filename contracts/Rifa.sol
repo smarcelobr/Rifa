@@ -55,7 +55,7 @@ contract Rifa {
     /**
      * @dev Adquire uma cota da Rifa. A cota é atribuída ao endereço do pagador
      */
-    function adquirirCota(uint8 cota) public payable {
+    function adquirirCota(uint8 cota) external payable {
         require(cotaSorteada == 0, "Essa rifa nao aceita mais compra de cotas");
         require(msg.value == valorDaCota, "O pagamento deve ser exatamento o valor da cota");
         require(cota > 0 && cota <= qtdCotas, "Escolha uma cota entre 1 e qtdCotas");
@@ -74,7 +74,7 @@ contract Rifa {
     /**
      * Realiza o sorteio e armazena o vencedor.
      */
-    function sortear() public isOwner {
+    function sortear() external isOwner {
         require(cotaSorteada == 0, "Sorteio ja foi realizado");
 
         cotaSorteada = uint8((randomNumber() % qtdCotas) + 1);
@@ -106,7 +106,7 @@ contract Rifa {
      * @dev O ganhador da rifa confirma que recebeu o produto e os
      * ethers do contrato são transferidos para o owner.
      */
-    function confirmarRecebimento() public {
+    function confirmarRecebimento() external {
         require(cotaSorteada > 0, "Nao houve sorteio.");
         require(cotas[cotaSorteada - 1] == msg.sender, "apenas o sorteado pode confirmar o recebimento.");
 
