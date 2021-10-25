@@ -57,7 +57,7 @@ contract Rifa {
      */
     function adquirirCota(uint8 cota) external payable {
         require(cotaSorteada == 0, "Essa rifa nao aceita mais compra de cotas");
-        require(msg.value == valorDaCota, "O pagamento deve ser exatamento o valor da cota");
+        require(msg.value == valorDaCota, "O pagamento deve ser exatamente o valor da cota");
         require(cota > 0 && cota <= qtdCotas, "Escolha uma cota entre 1 e qtdCotas");
         require(cotas[cota - 1] == address(0), "A cota escolhida ja foi adquirida");
 
@@ -115,7 +115,7 @@ contract Rifa {
 
         // send all Ether to owner
         // Owner can receive Ether since the address of owner is payable
-        (bool success,) = address(owner).call{value : amount}("");
+        (bool success,) = owner.call{value : amount}("");
         require(success, "O envio de Ether falhou");
     }
 

@@ -2,122 +2,117 @@
 
 pragma solidity >=0.7.0 <0.9.0;
 import "remix_tests.sol"; // this import is automatically injected by Remix.
-import "remix_accounts.sol";
 import "../contracts/Rifa.sol";
+import "./Rifa_actor.sol";
+import "./Rifa_Owner_actor.sol";
 
-contract RifaTest is Rifa(20, 14, "Caneta") {
+contract RifaTest {
 
+    Rifa rifa;
     // contas diferentes para testar como participantes
-    address acc0;
-    address acc1;
-    address acc2;
-    address acc3;
+    RifaOwnerActor dono;
+    RifaActor participante1;
+    RifaActor participante2;
+    RifaActor participante3;
 
-    //Rifa rifaToTest;
-    uint constant t_valorDaCota = 14; // 14 wei por cota
+    uint constant t_valorDaCota = 14000000; // 14.000.000 wei por cota
     uint8 constant t_qtdCotas = 20; // 20 cotas no total
 
     /**
      * Inicia a rifa
      */
     function beforeAll () public {
-
-        //  rifaToTest = new Rifa(t_qtdCotas, t_valorDaCota, "Caneta");
-
-        acc0 = TestsAccounts.getAccount(0);
-        acc1 = TestsAccounts.getAccount(1);
-        acc2 = TestsAccounts.getAccount(2);
-        acc3 = TestsAccounts.getAccount(3);
+        dono = new RifaOwnerActor(t_qtdCotas, t_valorDaCota, "Liquidificador");
+        rifa = dono.getRifa();
+        participante1 = new RifaActor(rifa);
+        participante2 = new RifaActor(rifa);
+        participante3 = new RifaActor(rifa);
     }
 
     /// #sender: account-1
-    /// #value: 14
+    /// #value: 14000000
     function checkAquisicaoCotas () public payable {
-        Assert.ok(msg.sender == acc1, 'caller should be custom account i.e. acc1');
         uint8 cota = 1;
-        //        (bool success, ) = address(rifaToTest).call{value: t_valorDaCota, gas: 5000}(
-        //            abi.encodeWithSignature("adquirirCota(uint8)",cota)
-        //        );
-        //        Assert.ok(success, "chamada nao foi bem sucedida");
-        this.adquirirCota{gas: 50000, value: t_valorDaCota}(cota);
-        Assert.equal(this.getCotaOwner(cota), address(acc1), "A quota deve ser de quem executou a funcao.");
+        participante1.adquirirCota{gas: 50000, value: t_valorDaCota}(cota);
+
+        Assert.equal(rifa.getCotaOwner(cota), address(participante1), "A quota deve ser de quem executou a funcao.");
     }
 
     /// #sender: account-2
-    /// #value: 14
+    /// #value: 14000000
     function checkAquisicaoCotaJaAdquirida () public payable {
         uint8 cota = 1;
 
-        try this.adquirirCota{gas: 50000, value: t_valorDaCota}(cota) {
-            Assert.ok(false, 'deveria ter falhado');
+        try participante2.adquirirCota{gas: 50000, value: t_valorDaCota}(cota) {
+            Assert.ok(false, 'falha esperada');
         } catch Error(string memory reason) {
             // Compare failure reason, check if it is as expected
-            Assert.equal(reason, 'A cota escolhida ja foi adquirida', 'falhou por um motivo inesperado');
+            Assert.equal(reason, 'A cota escolhida ja foi adquirida', 'falhou inesperadamente');
         } catch (bytes memory /*lowLevelData*/) {
             Assert.ok(false, 'falhou de forma inesperada');
         }
     }
 
     /// #sender: account-3
-    /// #value: 10
+    /// #value: 10000000
     function checkAquisicaoCotaAbaixoDoValor () public payable {
         uint8 cota = 2;
 
-        try this.adquirirCota{gas: 50000, value: 10}(cota) {
+        try participante3.adquirirCota{gas: 50000, value: 10000000}(cota) {
             Assert.ok(false, 'deveria ter falhado');
         } catch Error(string memory reason) {
             // Compare failure reason, check if it is as expected
-            Assert.equal(reason, 'O pagamento deve ser exatamento o valor da cota', 'falhou por um motivo inesperado');
+            Assert.equal(reason, 'O pagamento deve ser exatamente o valor da cota', 'falhou inesperadamente');
         } catch (bytes memory /*lowLevelData*/) {
             Assert.ok(false, 'falhou de forma inesperada');
         }
     }
 
     /// #sender: account-1
-    /// #value: 84
+    /// #value: 84000000
     function checkAquisicaoDeCotasDoAccount1 () public payable {
-        this.adquirirCota{gas: 50000, value: 14}(5);
-        this.adquirirCota{gas: 50000, value: 14}(7);
-        this.adquirirCota{gas: 50000, value: 14}(11);
-        this.adquirirCota{gas: 50000, value: 14}(13);
-        this.adquirirCota{gas: 50000, value: 14}(14);
-        this.adquirirCota{gas: 50000, value: 14}(19);
-        Assert.equal(this. getCotaOwner(5), address(acc1), "A quota deve ser de quem executou a funcao.");
+        participante1.adquirirCota{gas: 50000, value: t_valorDaCota}(5);
+        participante1.adquirirCota{gas: 50000, value: t_valorDaCota}(7);
+        participante1.adquirirCota{gas: 50000, value: t_valorDaCota}(11);
+        participante1.adquirirCota{gas: 50000, value: t_valorDaCota}(13);
+        participante1.adquirirCota{gas: 50000, value: t_valorDaCota}(14);
+        participante1.adquirirCota{gas: 50000, value: t_valorDaCota}(19);
+        Assert.equal(rifa.getCotaOwner(5), address(participante1), "CotaOwner invalid");
     }
 
     /// #sender: account-2
-    /// #value: 84
+    /// #value: 84000000
     function checkAquisicaoDeCotasDoAccount2 () public payable {
-        this.adquirirCota{gas: 50000, value: 14}(2);
-        this.adquirirCota{gas: 50000, value: 14}(4);
-        this.adquirirCota{gas: 50000, value: 14}(6);
-        this.adquirirCota{gas: 50000, value: 14}(8);
-        this.adquirirCota{gas: 50000, value: 14}(10);
-        this.adquirirCota{gas: 50000, value: 14}(12);
-        Assert.equal(this.getCotaOwner(2), address(acc2), "A quota deve ser de quem executou a funcao.");
-        Assert.equal(this.getCotaOwner(4), address(acc2), "A quota deve ser de quem executou a funcao.");
+        participante2.adquirirCota{gas: 50000, value: t_valorDaCota}(2);
+        participante2.adquirirCota{gas: 50000, value: t_valorDaCota}(4);
+        participante2.adquirirCota{gas: 50000, value: t_valorDaCota}(6);
+        participante2.adquirirCota{gas: 50000, value: t_valorDaCota}(8);
+        participante2.adquirirCota{gas: 50000, value: t_valorDaCota}(10);
+        participante2.adquirirCota{gas: 50000, value: t_valorDaCota}(12);
+        Assert.equal(rifa.getCotaOwner(2), address(participante2), "CotaOwner invalid");
+        Assert.equal(rifa.getCotaOwner(4), address(participante2), "CotaOwner invalid");
     }
 
     /// #sender: account-3
-    /// #value: 84
+    /// #value: 84000000
     function checkAquisicaoDeCotasDoAccount3 () public payable {
-        this.adquirirCota{gas: 50000, value: 14}(3);
-        this.adquirirCota{gas: 50000, value: 14}(9);
-        this.adquirirCota{gas: 50000, value: 14}(15);
-        this.adquirirCota{gas: 50000, value: 14}(16);
-        this.adquirirCota{gas: 50000, value: 14}(17);
-        this.adquirirCota{gas: 50000, value: 14}(18);
-        Assert.equal(this.getCotaOwner(18), address(acc3), "A quota deve ser de quem executou a funcao.");
+        participante3.adquirirCota{gas: 50000, value: t_valorDaCota}(3);
+        participante3.adquirirCota{gas: 50000, value: t_valorDaCota}(9);
+        participante3.adquirirCota{gas: 50000, value: t_valorDaCota}(15);
+        participante3.adquirirCota{gas: 50000, value: t_valorDaCota}(16);
+        participante3.adquirirCota{gas: 50000, value: t_valorDaCota}(17);
+        participante3.adquirirCota{gas: 50000, value: t_valorDaCota}(18);
+        Assert.equal(rifa.getCotaOwner(18), address(participante3), "CotaOwner invalid");
     }
 
     /// #sender: account-1
     /// #value: 0
     function checkSorteioSemSerOwner () public {
-        try this.sortear{gas: 50000}() {
+        try participante1.sortear{gas: 50000}() {
             Assert.ok(false, 'deveria ter falhado');
         } catch Error(string memory reason) {
             // Compare failure reason, check if it is as expected
-            Assert.equal(reason, 'Caller is not owner', 'falhou por um motivo inesperado');
+            Assert.equal(reason, 'Caller is not owner', 'falhou inesperadamente');
         } catch (bytes memory /*lowLevelData*/) {
             Assert.ok(false, 'falhou de forma inesperada');
         }
@@ -126,14 +121,14 @@ contract RifaTest is Rifa(20, 14, "Caneta") {
     /// #sender: account-0
     /// #value: 0
     function checkSorteio () public {
-        this.sortear{gas: 50000}();
-        Assert.greaterThan(uint(this.getCotaSorteada()), uint(0), 'Uma cota deveria ter sido sorteada');
+        dono.sortear{gas: 50000}();
+        Assert.greaterThan(uint(rifa.getCotaSorteada()), uint(0), 'Uma cota deveria ter sido sorteada');
     }
 
     /// #sender: account-0
     /// #value: 0
     function checkRepetirSorteio () public {
-        try this.sortear{gas: 50000}() {
+        try dono.sortear{gas: 50000}() {
             Assert.ok(false, 'deveria ter falhado');
         } catch Error(string memory reason) {
             // Compare failure reason, check if it is as expected
@@ -146,12 +141,12 @@ contract RifaTest is Rifa(20, 14, "Caneta") {
     /// #sender: account-0
     /// #value: 0
     function checkAccount0TentaConfirmarRecebimento () public {
-        try this.confirmarRecebimento{gas: 50000}() {
-            Assert.equal(this.getGanhador(), address(this), 'deveria ter falhado, pq acc-0 nao e ganhador');
+        try dono.confirmarRecebimento{gas: 50000}() {
+            Assert.equal(rifa.getGanhador(), address(this), 'deveria ter falhado, pq acc-0 nao e ganhador');
         } catch Error(string memory reason) {
             // Compare failure reason, check if it is as expected
             Assert.equal(reason, 'apenas o sorteado pode confirmar o recebimento.', 'falhou por um motivo inesperado');
-            Assert.notEqual(this.getGanhador(), address(this), 'deveria ter conseguido receber pq acc-0 e o ganhador');
+            Assert.notEqual(rifa.getGanhador(), address(this), 'deveria ter conseguido receber pq acc-0 e o ganhador');
         } catch (bytes memory /*lowLevelData*/) {
             Assert.ok(false, 'falhou de forma inesperada');
         }
@@ -160,12 +155,12 @@ contract RifaTest is Rifa(20, 14, "Caneta") {
     /// #sender: account-1
     /// #value: 0
     function checkAccount1TentaConfirmarRecebimento () public {
-        try this.confirmarRecebimento{gas: 50000}() {
-            Assert.equal(this.getGanhador(), address(this), 'deveria ter falhado, pq acc-1 nao e ganhador');
+        try participante1.confirmarRecebimento{gas: 50000}() {
+            Assert.equal(rifa.getGanhador(), address(participante1), 'deveria ter falhado, pq acc-1 nao e ganhador');
         } catch Error(string memory reason) {
             // Compare failure reason, check if it is as expected
             Assert.equal(reason, 'apenas o sorteado pode confirmar o recebimento.', 'falhou por um motivo inesperado');
-            Assert.notEqual(this.getGanhador(), address(this), 'deveria ter conseguido receber pq acc-1 e o ganhador');
+            Assert.notEqual(rifa.getGanhador(), address(participante1), 'deveria ter conseguido receber pq acc-1 e o ganhador');
         } catch (bytes memory /*lowLevelData*/) {
             Assert.ok(false, 'falhou de forma inesperada');
         }
@@ -174,30 +169,34 @@ contract RifaTest is Rifa(20, 14, "Caneta") {
     /// #sender: account-2
     /// #value: 0
     function checkAccount2TentaConfirmarRecebimento () public {
-        try this.confirmarRecebimento{gas: 50000}() {
-            Assert.equal(this.getGanhador(), address(this), 'deveria ter falhado, pq acc-2 nao e ganhador');
+        try participante2.confirmarRecebimento{gas: 50000}() {
+            Assert.equal(rifa.getGanhador(), address(participante2), 'deveria ter falhado, pq acc-2 nao e ganhador');
         } catch Error(string memory reason) {
             // Compare failure reason, check if it is as expected
             Assert.equal(reason, 'apenas o sorteado pode confirmar o recebimento.', 'falhou por um motivo inesperado');
-            Assert.notEqual(this.getGanhador(), address(this), 'deveria ter conseguido receber pq acc-2 e o ganhador');
+            Assert.notEqual(rifa.getGanhador(), address(participante2), 'deveria ter conseguido receber pq acc-2 e o ganhador');
         } catch (bytes memory /*lowLevelData*/) {
             Assert.ok(false, 'falhou de forma inesperada');
         }
     }
 
-
     /// #sender: account-3
     /// #value: 0
     function checkAccount3TentaConfirmarRecebimento () public {
-        try this.confirmarRecebimento{gas: 50000}() {
-            Assert.equal(this.getGanhador(), address(this), 'deveria ter falhado, pq acc-3 nao e ganhador');
+        try participante3.confirmarRecebimento{gas: 50000}() {
+            Assert.equal(rifa.getGanhador(), address(participante3), 'deveria ter falhado, pq acc-3 nao e ganhador');
         } catch Error(string memory reason) {
             // Compare failure reason, check if it is as expected
             Assert.equal(reason, 'apenas o sorteado pode confirmar o recebimento.', 'falhou por um motivo inesperado');
-            Assert.notEqual(this.getGanhador(), address(this), 'deveria ter conseguido receber pq acc-3 e o ganhador');
+            Assert.notEqual(rifa.getGanhador(), address(participante3), 'deveria ter conseguido receber pq acc-3 e o ganhador');
         } catch (bytes memory /*lowLevelData*/) {
             Assert.ok(false, 'falhou de forma inesperada');
         }
+    }
+
+    // #value: 0
+    function getBalance() public {
+        Assert.equal(dono.getBalance(), t_valorDaCota*19, "O owner nao recebeu a quantia esperada.") ;
     }
 
 }
